@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SepcialMomentBE.Models;
 using SepcialMomentBE.Services;
 
 namespace SepcialMomentBE.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class WeddingExpenseController : ControllerBase

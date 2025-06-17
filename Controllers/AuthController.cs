@@ -10,10 +10,12 @@ namespace SepcialMomentBE.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -22,6 +24,8 @@ namespace SepcialMomentBE.Controllers
         {
             try
             {
+                _logger.LogInformation("Attempting to register user with email: {Email}", request.Email);
+                
                 var result = await _authService.RegisterAsync(
                     request.Email,
                     request.Password,
@@ -32,6 +36,7 @@ namespace SepcialMomentBE.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error during registration for email: {Email}", request.Email);
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -42,11 +47,22 @@ namespace SepcialMomentBE.Controllers
         {
             try
             {
+                _logger.LogInformation("Attempting login for user: {Email}", request.Email);
+                
                 var response = await _authService.LoginAsync(request.Email, request.Password);
-                return Ok(response);
+                
+                _logger.LogInformation("Login successful for user: {Email}", request.Email);
+                
+                return Ok(new
+                {
+                    accessToken = response.AccessToken,
+                    refreshToken = response.RefreshToken,
+                    expiresAt = response.ExpiresAt
+                });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Login failed for user: {Email}", request.Email);
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -70,13 +86,15 @@ namespace SepcialMomentBE.Controllers
         [HttpPost("revoke-token")]
         public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request)
         {
-            var result = await _authService.RevokeTokenAsync(request.RefreshToken);
-            if (!result)
+            try
             {
-                return BadRequest(new { message = "Invalid refresh token" });
+                var result = await _authService.RevokeTokenAsync(request.RefreshToken);
+                return Ok(new { message = "Token revoked successfully" });
             }
-
-            return Ok(new { message = "Token revoked successfully" });
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 } 
