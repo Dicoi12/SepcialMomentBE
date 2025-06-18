@@ -5,7 +5,7 @@ using SepcialMomentBE.Services;
 
 namespace SepcialMomentBE.Controllers
 {
-    [Authorize]
+    [AllowAnonymous]
     [ApiController]
     [Route("api/[controller]")]
     public class EventFormController : ControllerBase

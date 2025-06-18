@@ -6,11 +6,17 @@ using Microsoft.OpenApi.Models;
 using SepcialMomentBE.Data;
 using SepcialMomentBE.Models;
 using SepcialMomentBE.Services;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -32,7 +38,36 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
         RequireExpirationTime = true,
-        ValidateTokenReplay = false
+        ValidateTokenReplay = false,
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError("Authentication failed: {Exception}", context.Exception);
+            
+            if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            {
+                context.Response.Headers.Add("Token-Expired", "true");
+            }
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Received token: {Token}", context.Token);
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -68,8 +103,9 @@ builder.Services.AddSwaggerGen(c =>
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -112,6 +148,7 @@ builder.Services.AddScoped<GenericCrudService<EventForm>>();
 builder.Services.AddScoped<GenericCrudService<InvitationTemplate>>();
 builder.Services.AddScoped<GenericCrudService<WeddingExpense>>();
 builder.Services.AddScoped<GenericCrudService<WeddingGuest>>();
+builder.Services.AddScoped<GenericCrudService<EventFormTemplate>>();
 
 var app = builder.Build();
 
@@ -128,6 +165,16 @@ app.UseCors("AllowAll");
 // Important: Authentication must be before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add logging middleware
+app.Use(async (context, next) =>
+{
+    var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Request path: {Path}", context.Request.Path);
+    logger.LogInformation("Authorization header: {Header}", context.Request.Headers["Authorization"].ToString());
+    
+    await next();
+});
 
 app.MapControllers();
 
