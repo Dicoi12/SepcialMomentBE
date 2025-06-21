@@ -1,28 +1,32 @@
 import { createApp } from 'vue'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import './style.css'
 import App from './App.vue'
+import '/node_modules/primeflex/primeflex.css'
+import 'primeflex/primeflex.css';
+import 'primeicons/primeicons.css'
+import Aura from '@primeuix/themes/aura';
+import router from './router'
 
 // PrimeVue styles
 // import 'primevue/resources/themes/aura-light-blue/theme.css'
 // import 'primevue/resources/primevue.css'
 // import 'primeflex/primeflex.css'
 
-// Create router instance
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: () => import('./views/Home.vue')
-    }
-  ]
-})
-
 const app = createApp(App)
+const pinia = createPinia()
 
+app.use(pinia)
 app.use(router)
-app.use(PrimeVue)
+app.use(PrimeVue, {
+  theme: {
+      preset: Aura,
+      options: {
+          prefix: 'p',
+          cssLayer: false,
+          darkModeSelector: false || 'none',
+      }
+  }
+});
 app.mount('#app')
