@@ -21,6 +21,11 @@
         </div>
         
         <form @submit.prevent="handleLogin" class="login-form">
+          <div v-if="successMessage" class="success-alert">
+            <i class="pi pi-check-circle"></i>
+            {{ successMessage }}
+          </div>
+          
           <div class="form-group">
             <label for="email" class="form-label">Email</label>
             <div class="input-wrapper">
@@ -97,17 +102,28 @@
   
   <script setup lang="ts">
   import { useUserStore } from '../stores/user'
+  import { ref, computed, onMounted } from 'vue'
+  import { useRouter, useRoute } from 'vue-router'
   const router = useRouter()
   const userStore = useUserStore()
+  const route = useRoute()
   
   const email = ref('')
   const password = ref('')
   const rememberMe = ref(false)
   const loginError = ref('')
+  const successMessage = ref('')
   
   const errors = ref({
     email: '',
     password: ''
+  })
+  
+  // Verifică dacă utilizatorul vine de la înregistrare
+  onMounted(() => {
+    if (route.query.registered === 'true') {
+      successMessage.value = 'Contul a fost creat cu succes! Te poți conecta acum.'
+    }
   })
   
   const isFormValid = computed(() => {
@@ -163,7 +179,7 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    padding: 1rem;
+    padding: 0;
     overflow: hidden;
   }
   
@@ -439,6 +455,19 @@
     border: 1px solid #ffb3b3;
   }
   
+  .success-alert {
+    background: linear-gradient(135deg, #e6ffe6, #ccffcc);
+    color: #27ae60;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.95rem;
+    border: 1px solid #b3ffb3;
+  }
+  
   .login-footer {
     text-align: center;
     padding-top: 2rem;
@@ -467,7 +496,7 @@
   /* Responsive Design */
   @media (max-width: 768px) {
     .login-container {
-      padding: 0.5rem;
+      padding: 0;
       min-height: 100vh;
     }
     
@@ -552,7 +581,7 @@
   /* Landscape orientation for mobile */
   @media (max-height: 600px) and (orientation: landscape) {
     .login-container {
-      padding: 0.5rem;
+      padding: 0;
     }
     
     .login-card {

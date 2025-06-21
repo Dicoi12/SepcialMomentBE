@@ -13,11 +13,22 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/Login.vue')
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('./views/Register.vue')
+  },
+  {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('./views/Dashboard.vue'),
     meta: { requiresAuth: true }
-  }
+  },
+  {
+    path: '/events',
+    name: 'events',
+    component: () => import('./views/Events.vue'),
+    meta: { requiresAuth: true }
+  },
   // Adaugă aici rute noi, de exemplu:
   // {
   //   path: '/about',

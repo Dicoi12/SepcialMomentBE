@@ -1,4 +1,4 @@
-// Importurile sunt automatizate de unplugin-auto-import
+import { defineStore } from 'pinia'
 import fetchApi from '../fetch'
 
 interface User {
@@ -13,8 +13,23 @@ interface LoginRequest {
   password: string
 }
 
+interface RegisterRequest {
+  name: string
+  email: string
+  password: string
+}
+
 interface LoginResponse {
   token: string
+  user: {
+    id: number
+    name: string
+    email: string
+  }
+}
+
+interface RegisterResponse {
+  message: string
   user: {
     id: number
     name: string
@@ -36,6 +51,21 @@ export const useUserStore = defineStore('user', {
   },
   
   actions: {
+    async register(name: string, email: string, password: string) {
+      this.isLoading = true
+      try {
+        const registerData: RegisterRequest = { name, email, password }
+        const response: RegisterResponse = await fetchApi('Auth/register', 'POST', registerData)
+        
+        return response
+      } catch (error: any) {
+        console.error('Eroare la înregistrare:', error)
+        throw new Error(error.message || 'Eroare la înregistrare')
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     async login(email: string, password: string) {
       this.isLoading = true
       try {

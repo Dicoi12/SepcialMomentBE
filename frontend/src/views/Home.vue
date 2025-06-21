@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-// Importurile sunt automatizate de unplugin-auto-import și unplugin-vue-components
+import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const eventTypes = [
@@ -126,7 +126,7 @@ const goToRegister = () => {
 
 <style scoped>
 .home-container {
-  min-height: 100vh;
+  height: 100vh;
   width: 100vw;
   background: linear-gradient(135deg, #ff6b9d 0%, #c44569 25%, #f8b5d3 50%, #ff9ff3 75%, #f368e0 100%);
   overflow-x: hidden;
@@ -140,7 +140,7 @@ const goToRegister = () => {
   color: white;
   max-width: 1200px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100%;
   position: relative;
 }
 

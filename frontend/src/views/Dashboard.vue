@@ -69,6 +69,7 @@
 
 <script setup lang="ts">
 // Importurile sunt automatizate de unplugin-auto-import și unplugin-vue-components
+import { useUserStore } from '../stores/user'
 const userStore = useUserStore()
 
 const recentEvents = [
