@@ -71,5 +71,45 @@ namespace SepcialMomentBE.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<EventFormTemplate>> GetEventFormTemplatesByEventTypeAsync(string eventType)
+        {
+            return await _context.EventFormTemplates
+                .Where(template => template.EventType.ToLower() == eventType.ToLower())
+                .OrderBy(template => template.DisplayOrder)
+                .ToListAsync();
+        }
+
+        public async Task<Event> CreateEventWithFormAsync(Event event_, List<EventForm> eventForms)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            
+            try
+            {
+                // Adaug evenimentul
+                _context.Events.Add(event_);
+                await _context.SaveChangesAsync();
+                
+                // Adaug formularele asociate evenimentului
+                foreach (var form in eventForms)
+                {
+                    form.EventId = event_.Id;
+                    form.CreatedAt = DateTime.UtcNow;
+                }
+                
+                _context.EventForms.AddRange(eventForms);
+                await _context.SaveChangesAsync();
+                
+                await transaction.CommitAsync();
+                
+                // Returnez evenimentul cu formularele incluse
+                return await GetEventByIdAsync(event_.Id) ?? event_;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 } 

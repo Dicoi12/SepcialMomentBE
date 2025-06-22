@@ -7,7 +7,7 @@
         <p class="page-subtitle">Gestionează și planifică evenimentele tale speciale</p>
       </div>
       <Button 
-        @click="showCreateModal = true" 
+        @click="startEventWizard" 
         label="Eveniment Nou" 
         icon="pi pi-plus"
         severity="primary" 
@@ -162,7 +162,7 @@
       <h3>Nu ai evenimente încă</h3>
       <p>Creează primul tău eveniment pentru a începe să planifici momentele tale speciale</p>
       <Button 
-        @click="showCreateModal = true" 
+        @click="startEventWizard" 
         label="Creează Eveniment" 
         icon="pi pi-plus"
         severity="primary" 
@@ -170,106 +170,286 @@
       />
     </div>
 
-    <!-- Create/Edit Event Modal -->
+    <!-- Event Wizard Modal -->
     <Dialog 
-      v-model:visible="showCreateModal" 
-      :header="isEditing ? 'Editează Eveniment' : 'Eveniment Nou'"
+      v-model:visible="showWizardModal" 
+      :header="wizardHeader"
       modal 
-      class="event-modal"
-      :style="{ width: '600px' }"
+      class="wizard-modal"
+      :style="{ width: '800px', maxWidth: '90vw' }"
+      :closable="false"
     >
-      <form @submit.prevent="saveEvent" class="event-form">
-        <div class="form-group">
-          <label for="title">Titlu Eveniment</label>
-          <InputText
-            id="title"
-            v-model="eventForm.title"
-            placeholder="Ex: Nunta Maria și Ion"
-            class="form-input"
-            :class="{ 'p-invalid': errors.title }"
-          />
-          <small v-if="errors.title" class="error-message">{{ errors.title }}</small>
+      <!-- Wizard Progress -->
+      <div class="wizard-progress">
+        <div class="progress-steps">
+          <div 
+            v-for="(step, index) in wizardSteps" 
+            :key="index"
+            class="progress-step"
+            :class="{ 
+              'active': currentStep === index,
+              'completed': currentStep > index,
+              'disabled': currentStep < index
+            }"
+          >
+            <div class="step-number">{{ index + 1 }}</div>
+            <div class="step-label">{{ step.label }}</div>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label for="eventType">Tip Eveniment</label>
-          <Dropdown
-            id="eventType"
-            v-model="eventForm.eventType"
-            :options="eventTypeOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selectează tipul"
-            class="form-input"
-            :class="{ 'p-invalid': errors.eventType }"
-          />
-          <small v-if="errors.eventType" class="error-message">{{ errors.eventType }}</small>
+        <div class="progress-bar">
+          <div 
+            class="progress-fill" 
+            :style="{ width: `${(currentStep / (wizardSteps.length - 1)) * 100}%` }"
+          ></div>
         </div>
+      </div>
 
-        <div class="form-row">
+      <!-- Step 1: Basic Event Information -->
+      <div v-if="currentStep === 0" class="wizard-step">
+        <h3>Informații de Bază</h3>
+        <p class="step-description">Completează informațiile principale despre eveniment</p>
+        
+        <form @submit.prevent="nextStep" class="wizard-form">
           <div class="form-group">
-            <label for="date">Data Eveniment</label>
+            <label for="title">Titlu Eveniment *</label>
+            <InputText
+              id="title"
+              v-model="eventForm.title"
+              placeholder="Ex: Nunta Maria și Ion"
+              class="form-input"
+              :class="{ 'p-invalid': errors.title }"
+            />
+            <small v-if="errors.title" class="error-message">{{ errors.title }}</small>
+          </div>
+
+          <div class="form-group">
+            <label for="eventType">Tip Eveniment *</label>
+            <Dropdown
+              id="eventType"
+              v-model="eventForm.eventType"
+              :options="eventTypeOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Selectează tipul"
+              class="form-input"
+              :class="{ 'p-invalid': errors.eventType }"
+              @change="onEventTypeChange"
+            />
+            <small v-if="errors.eventType" class="error-message">{{ errors.eventType }}</small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="date">Data Eveniment *</label>
+              <Calendar
+                id="date"
+                v-model="eventForm.date"
+                :showIcon="true"
+                class="form-input"
+                :class="{ 'p-invalid': errors.date }"
+              />
+              <small v-if="errors.date" class="error-message">{{ errors.date }}</small>
+            </div>
+
+            <div class="form-group">
+              <label for="time">Ora Eveniment</label>
+              <Calendar
+                id="time"
+                v-model="eventForm.date"
+                timeOnly
+                hourFormat="24"
+                class="form-input"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Locație *</label>
+            <InputText
+              id="location"
+              v-model="eventForm.location"
+              placeholder="Ex: Restaurantul La Strada"
+              class="form-input"
+              :class="{ 'p-invalid': errors.location }"
+            />
+            <small v-if="errors.location" class="error-message">{{ errors.location }}</small>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Descriere *</label>
+            <Textarea
+              id="description"
+              v-model="eventForm.description"
+              placeholder="Descrie evenimentul tău..."
+              rows="4"
+              class="form-input"
+              :class="{ 'p-invalid': errors.description }"
+            />
+            <small v-if="errors.description" class="error-message">{{ errors.description }}</small>
+          </div>
+        </form>
+      </div>
+
+      <!-- Step 2: Event Form Template -->
+      <div v-if="currentStep === 1" class="wizard-step">
+        <h3>Configurare Eveniment</h3>
+        <p class="step-description">Completează detaliile specifice pentru tipul de eveniment selectat</p>
+        
+        <div v-if="isLoadingTemplate" class="template-loading">
+          <ProgressSpinner size="large" />
+          <p>Se încarcă template-ul pentru {{ getEventTypeLabel(eventForm.eventType) }}...</p>
+        </div>
+        
+        <div v-else-if="eventFormTemplate" class="template-form">
+          <div 
+            v-for="field in eventFormTemplate.fields" 
+            :key="field.name"
+            class="form-group"
+          >
+            <label :for="field.name">{{ field.label }} {{ field.required ? '*' : '' }}</label>
+            
+            <!-- Input Text -->
+            <InputText
+              v-if="field.type === 'text'"
+              :id="field.name"
+              v-model="templateFormData[field.name]"
+              :placeholder="field.placeholder"
+              class="form-input"
+              :class="{ 'p-invalid': templateErrors[field.name] }"
+            />
+            
+            <!-- Textarea -->
+            <Textarea
+              v-else-if="field.type === 'textarea'"
+              :id="field.name"
+              v-model="templateFormData[field.name]"
+              :placeholder="field.placeholder"
+              :rows="field.rows || 4"
+              class="form-input"
+              :class="{ 'p-invalid': templateErrors[field.name] }"
+            />
+            
+            <!-- Number Input -->
+            <InputNumber
+              v-else-if="field.type === 'number'"
+              :id="field.name"
+              v-model="templateFormData[field.name]"
+              :placeholder="field.placeholder"
+              class="form-input"
+              :class="{ 'p-invalid': templateErrors[field.name] }"
+            />
+            
+            <!-- Dropdown -->
+            <Dropdown
+              v-else-if="field.type === 'dropdown'"
+              :id="field.name"
+              v-model="templateFormData[field.name]"
+              :options="field.options"
+              optionLabel="label"
+              optionValue="value"
+              :placeholder="field.placeholder"
+              class="form-input"
+              :class="{ 'p-invalid': templateErrors[field.name] }"
+            />
+            
+            <!-- Checkbox -->
+            <div v-else-if="field.type === 'checkbox'" class="checkbox-group">
+              <Checkbox
+                :id="field.name"
+                v-model="templateFormData[field.name]"
+                :binary="true"
+              />
+              <label :for="field.name" class="checkbox-label">{{ field.label }}</label>
+            </div>
+            
+            <!-- Date Picker -->
             <Calendar
-              id="date"
-              v-model="eventForm.date"
+              v-else-if="field.type === 'date'"
+              :id="field.name"
+              v-model="templateFormData[field.name]"
               :showIcon="true"
+              :placeholder="field.placeholder"
               class="form-input"
-              :class="{ 'p-invalid': errors.date }"
+              :class="{ 'p-invalid': templateErrors[field.name] }"
             />
-            <small v-if="errors.date" class="error-message">{{ errors.date }}</small>
-          </div>
-
-          <div class="form-group">
-            <label for="time">Ora Eveniment</label>
-            <Calendar
-              id="time"
-              v-model="eventForm.date"
-              timeOnly
-              hourFormat="24"
-              class="form-input"
-            />
+            
+            <small v-if="templateErrors[field.name]" class="error-message">{{ templateErrors[field.name] }}</small>
           </div>
         </div>
-
-        <div class="form-group">
-          <label for="location">Locație</label>
-          <InputText
-            id="location"
-            v-model="eventForm.location"
-            placeholder="Ex: Restaurantul La Strada"
-            class="form-input"
-            :class="{ 'p-invalid': errors.location }"
-          />
-          <small v-if="errors.location" class="error-message">{{ errors.location }}</small>
+        
+        <div v-else class="no-template">
+          <i class="pi pi-info-circle"></i>
+          <p>Nu există template specific pentru acest tip de eveniment. Poți continua cu informațiile de bază.</p>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label for="description">Descriere</label>
-          <Textarea
-            id="description"
-            v-model="eventForm.description"
-            placeholder="Descrie evenimentul tău..."
-            rows="4"
-            class="form-input"
-            :class="{ 'p-invalid': errors.description }"
-          />
-          <small v-if="errors.description" class="error-message">{{ errors.description }}</small>
+      <!-- Step 3: Review and Save -->
+      <div v-if="currentStep === 2" class="wizard-step">
+        <h3>Revizuire și Salvare</h3>
+        <p class="step-description">Verifică informațiile și salvează evenimentul</p>
+        
+        <div class="review-section">
+          <h4>Informații de Bază</h4>
+          <div class="review-item">
+            <strong>Titlu:</strong> {{ eventForm.title }}
+          </div>
+          <div class="review-item">
+            <strong>Tip:</strong> {{ getEventTypeLabel(eventForm.eventType) }}
+          </div>
+          <div class="review-item">
+            <strong>Data și Ora:</strong> {{ formatDateTime(eventForm.date) }}
+          </div>
+          <div class="review-item">
+            <strong>Locație:</strong> {{ eventForm.location }}
+          </div>
+          <div class="review-item">
+            <strong>Descriere:</strong> {{ eventForm.description }}
+          </div>
+          
+          <div v-if="Object.keys(templateFormData).length > 0" class="template-review">
+            <h4>Configurare Specifică</h4>
+            <div 
+              v-for="(value, key) in templateFormData" 
+              :key="key"
+              class="review-item"
+            >
+              <strong>{{ getFieldLabel(key) }}:</strong> {{ formatFieldValue(value) }}
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
 
+      <!-- Wizard Footer -->
       <template #footer>
-        <Button 
-          @click="showCreateModal = false" 
-          label="Anulează" 
-          severity="secondary" 
-          outlined
-        />
-        <Button 
-          @click="saveEvent" 
-          :label="isEditing ? 'Actualizează' : 'Creează'" 
-          severity="primary"
-          :loading="isSaving"
-        />
+        <div class="wizard-footer">
+          <Button 
+            v-if="currentStep > 0"
+            @click="previousStep" 
+            label="Înapoi" 
+            severity="secondary" 
+            outlined
+          />
+          <Button 
+            v-if="currentStep < wizardSteps.length - 1"
+            @click="nextStep" 
+            :label="currentStep === 1 ? 'Revizuire' : 'Următorul Pas'"
+            severity="primary"
+            :loading="isLoadingTemplate"
+          />
+          <Button 
+            v-if="currentStep === wizardSteps.length - 1"
+            @click="saveEvent" 
+            label="Salvează Eveniment" 
+            severity="success"
+            :loading="isSaving"
+          />
+          <Button 
+            @click="closeWizard" 
+            label="Anulează" 
+            severity="secondary" 
+            outlined
+          />
+        </div>
       </template>
     </Dialog>
 
@@ -309,19 +489,26 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import type { Event, EventFormTemplate, CreateEventRequest } from '../types/event'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 // State
-const events = ref<any[]>([])
+const events = ref<Event[]>([])
 const isLoading = ref(false)
 const isSaving = ref(false)
 const isDeleting = ref(false)
-const showCreateModal = ref(false)
+const showWizardModal = ref(false)
 const showDeleteModal = ref(false)
-const isEditing = ref(false)
-const eventToDelete = ref<any>(null)
+const eventToDelete = ref<Event | null>(null)
+
+// Wizard State
+const currentStep = ref(0)
+const isLoadingTemplate = ref(false)
+const eventFormTemplate = ref<EventFormTemplate | null>(null)
+const templateFormData = ref<Record<string, any>>({})
+const templateErrors = ref<Record<string, string>>({})
 
 // Filters
 const searchQuery = ref('')
@@ -329,13 +516,13 @@ const selectedEventType = ref('')
 const selectedDate = ref<Date | null>(null)
 
 // Form
-const eventForm = ref({
-  id: 0,
+const eventForm = ref<CreateEventRequest>({
   title: '',
   eventType: '',
   date: new Date(),
   location: '',
-  description: ''
+  description: '',
+  userId: Number(userStore.user?.id) || 0
 })
 
 const errors = ref({
@@ -353,7 +540,18 @@ const eventTypeOptions = [
   { label: 'Aniversare', value: 'Anniversary' }
 ]
 
+// Wizard Steps
+const wizardSteps = [
+  { label: 'Informații de Bază', icon: 'pi pi-info-circle' },
+  { label: 'Configurare Specifică', icon: 'pi pi-cog' },
+  { label: 'Revizuire', icon: 'pi pi-check-circle' }
+]
+
 // Computed
+const wizardHeader = computed(() => {
+  return `Creează Eveniment - ${wizardSteps[currentStep.value].label}`
+})
+
 const filteredEvents = computed(() => {
   let filtered = events.value
 
@@ -380,124 +578,20 @@ const filteredEvents = computed(() => {
 })
 
 // Methods
-const loadEvents = async () => {
-  isLoading.value = true
-  try {
-    const response = await fetch('/api/Event', {
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-    
-    if (response.ok) {
-      events.value = await response.json()
-    } else {
-      console.error('Eroare la încărcarea evenimentelor')
-    }
-  } catch (error) {
-    console.error('Eroare la încărcarea evenimentelor:', error)
-  } finally {
-    isLoading.value = false
-  }
+const startEventWizard = () => {
+  resetWizard()
+  showWizardModal.value = true
 }
 
-const saveEvent = async () => {
-  if (!validateForm()) return
-
-  isSaving.value = true
-  try {
-    const url = isEditing.value 
-      ? `/api/Event/${eventForm.value.id}`
-      : '/api/Event'
-    
-    const method = isEditing.value ? 'PUT' : 'POST'
-    
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify({
-        ...eventForm.value,
-        userId: userStore.user?.id
-      })
-    })
-
-    if (response.ok) {
-      showCreateModal.value = false
-      resetForm()
-      await loadEvents()
-    } else {
-      console.error('Eroare la salvarea evenimentului')
-    }
-  } catch (error) {
-    console.error('Eroare la salvarea evenimentului:', error)
-  } finally {
-    isSaving.value = false
-  }
-}
-
-const deleteEvent = (eventId: number) => {
-  const event = events.value.find(e => e.id === eventId)
-  eventToDelete.value = event
-  showDeleteModal.value = true
-}
-
-const confirmDelete = async () => {
-  if (!eventToDelete.value) return
-
-  isDeleting.value = true
-  try {
-    const response = await fetch(`/api/Event/${eventToDelete.value.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
-
-    if (response.ok) {
-      showDeleteModal.value = false
-      eventToDelete.value = null
-      await loadEvents()
-    } else {
-      console.error('Eroare la ștergerea evenimentului')
-    }
-  } catch (error) {
-    console.error('Eroare la ștergerea evenimentului:', error)
-  } finally {
-    isDeleting.value = false
-  }
-}
-
-const editEvent = (event: any) => {
-  eventForm.value = { ...event }
-  isEditing.value = true
-  showCreateModal.value = true
-}
-
-const viewEventDetails = (event: any) => {
-  router.push(`/events/${event.id}`)
-}
-
-const manageEvent = (event: any) => {
-  router.push(`/events/${event.id}/manage`)
-}
-
-const clearFilters = () => {
-  searchQuery.value = ''
-  selectedEventType.value = ''
-  selectedDate.value = null
-}
-
-const resetForm = () => {
+const resetWizard = () => {
+  currentStep.value = 0
   eventForm.value = {
-    id: 0,
     title: '',
     eventType: '',
     date: new Date(),
     location: '',
-    description: ''
+    description: '',
+    userId: Number(userStore.user?.id) || 0
   }
   errors.value = {
     title: '',
@@ -506,10 +600,72 @@ const resetForm = () => {
     location: '',
     description: ''
   }
-  isEditing.value = false
+  eventFormTemplate.value = null
+  templateFormData.value = {}
+  templateErrors.value = {}
 }
 
-const validateForm = () => {
+const closeWizard = () => {
+  showWizardModal.value = false
+  resetWizard()
+}
+
+const nextStep = async () => {
+  if (currentStep.value === 0) {
+    if (!validateBasicForm()) return
+    await loadEventFormTemplate()
+  } else if (currentStep.value === 1) {
+    if (!validateTemplateForm()) return
+  }
+  
+  if (currentStep.value < wizardSteps.length - 1) {
+    currentStep.value++
+  }
+}
+
+const previousStep = () => {
+  if (currentStep.value > 0) {
+    currentStep.value--
+  }
+}
+
+const onEventTypeChange = () => {
+  // Reset template data when event type changes
+  eventFormTemplate.value = null
+  templateFormData.value = {}
+  templateErrors.value = {}
+}
+
+const loadEventFormTemplate = async () => {
+  if (!eventForm.value.eventType) return
+  
+  isLoadingTemplate.value = true
+  try {
+    const response = await fetch(`/api/EventForm/GetTemplate/${eventForm.value.eventType}`, {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    if (response.ok) {
+      eventFormTemplate.value = await response.json()
+      // Initialize template form data
+      if (eventFormTemplate.value?.fields) {
+        eventFormTemplate.value.fields.forEach((field) => {
+          templateFormData.value[field.name] = field.defaultValue || ''
+        })
+      }
+    } else {
+      console.log('Nu există template pentru acest tip de eveniment')
+    }
+  } catch (error) {
+    console.error('Eroare la încărcarea template-ului:', error)
+  } finally {
+    isLoadingTemplate.value = false
+  }
+}
+
+const validateBasicForm = () => {
   errors.value = {
     title: '',
     eventType: '',
@@ -548,6 +704,133 @@ const validateForm = () => {
   return isValid
 }
 
+const validateTemplateForm = () => {
+  if (!eventFormTemplate.value?.fields) return true
+  
+  templateErrors.value = {}
+  let isValid = true
+
+  eventFormTemplate.value.fields.forEach((field) => {
+    if (field.required && (!templateFormData.value[field.name] || 
+        (typeof templateFormData.value[field.name] === 'string' && 
+         !templateFormData.value[field.name].trim()))) {
+      templateErrors.value[field.name] = `${field.label} este obligatoriu`
+      isValid = false
+    }
+  })
+
+  return isValid
+}
+
+const loadEvents = async () => {
+  isLoading.value = true
+  try {
+    const response = await fetch('/api/Event', {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+    
+    if (response.ok) {
+      events.value = await response.json()
+    } else {
+      console.error('Eroare la încărcarea evenimentelor')
+    }
+  } catch (error) {
+    console.error('Eroare la încărcarea evenimentelor:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const saveEvent = async () => {
+  isSaving.value = true
+  try {
+    const eventData: CreateEventRequest = {
+      ...eventForm.value,
+      userId: Number(userStore.user?.id) || 0,
+      formData: templateFormData.value
+    }
+    
+    const response = await fetch('/api/Event', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+      },
+      body: JSON.stringify(eventData)
+    })
+
+    if (response.ok) {
+      showWizardModal.value = false
+      resetWizard()
+      await loadEvents()
+    } else {
+      console.error('Eroare la salvarea evenimentului')
+    }
+  } catch (error) {
+    console.error('Eroare la salvarea evenimentului:', error)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+const deleteEvent = (eventId: number) => {
+  const event = events.value.find(e => e.id === eventId)
+  eventToDelete.value = event || null
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!eventToDelete.value) return
+
+  isDeleting.value = true
+  try {
+    const response = await fetch(`/api/Event/${eventToDelete.value.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      }
+    })
+
+    if (response.ok) {
+      showDeleteModal.value = false
+      eventToDelete.value = null
+      await loadEvents()
+    } else {
+      console.error('Eroare la ștergerea evenimentului')
+    }
+  } catch (error) {
+    console.error('Eroare la ștergerea evenimentului:', error)
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+const editEvent = (event: Event) => {
+  // For now, use the old modal approach for editing
+  eventForm.value = { 
+    ...event,
+    date: new Date(event.date),
+    userId: Number(userStore.user?.id) || 0
+  }
+  showWizardModal.value = true
+}
+
+const viewEventDetails = (event: Event) => {
+  router.push(`/events/${event.id}`)
+}
+
+const manageEvent = (event: Event) => {
+  router.push(`/events/${event.id}/manage`)
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedEventType.value = ''
+  selectedDate.value = null
+}
+
 // Utility functions
 const formatDate = (date: string | Date) => {
   return new Date(date).toLocaleDateString('ro-RO', {
@@ -559,6 +842,16 @@ const formatDate = (date: string | Date) => {
 
 const formatTime = (date: string | Date) => {
   return new Date(date).toLocaleTimeString('ro-RO', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const formatDateTime = (date: string | Date) => {
+  return new Date(date).toLocaleString('ro-RO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   })
@@ -589,6 +882,25 @@ const getEventTypeClass = (type: string) => {
     case 'Anniversary': return 'anniversary'
     default: return 'default'
   }
+}
+
+const getFieldLabel = (fieldName: string) => {
+  if (!eventFormTemplate.value?.fields) return fieldName
+  const field = eventFormTemplate.value.fields.find((f) => f.name === fieldName)
+  return field ? field.label : fieldName
+}
+
+const formatFieldValue = (value: any) => {
+  if (value === null || value === undefined || value === '') {
+    return 'Nu specificat'
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Da' : 'Nu'
+  }
+  if (value instanceof Date) {
+    return formatDateTime(value)
+  }
+  return String(value)
 }
 
 // Lifecycle
@@ -1046,6 +1358,266 @@ onMounted(() => {
   
   .event-card {
     margin: 0 0.5rem;
+  }
+}
+
+/* Wizard Styles */
+.wizard-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.wizard-progress {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  position: relative;
+}
+
+.progress-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #e9ecef;
+  z-index: 1;
+}
+
+.progress-step.completed:not(:last-child)::after {
+  background: #27ae60;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e9ecef;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.progress-step.active .step-number {
+  background: linear-gradient(135deg, #c44569, #ff6b9d);
+  color: white;
+  transform: scale(1.1);
+}
+
+.progress-step.completed .step-number {
+  background: #27ae60;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.progress-step.active .step-label {
+  color: #c44569;
+}
+
+.progress-step.completed .step-label {
+  color: #27ae60;
+}
+
+.progress-bar {
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #c44569, #ff6b9d);
+  transition: width 0.3s ease;
+}
+
+.wizard-step {
+  padding: 1rem 0;
+}
+
+.wizard-step h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.step-description {
+  color: #7f8c8d;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.wizard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.template-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #7f8c8d;
+}
+
+.template-loading p {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+}
+
+.template-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.checkbox-label {
+  font-weight: 500;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.no-template {
+  text-align: center;
+  padding: 2rem;
+  color: #7f8c8d;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.no-template i {
+  font-size: 2rem;
+  color: #c44569;
+  margin-bottom: 1rem;
+}
+
+.review-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.review-section h4 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.5rem;
+}
+
+.review-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-item strong {
+  color: #2c3e50;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.template-review {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e9ecef;
+}
+
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wizard-footer .p-button {
+  min-width: 120px;
+}
+
+/* Responsive Wizard */
+@media (max-width: 768px) {
+  .wizard-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+  
+  .progress-steps {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .progress-step:not(:last-child)::after {
+    display: none;
+  }
+  
+  .step-label {
+    font-size: 0.8rem;
+  }
+  
+  .wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .wizard-footer .p-button {
+    width: 100%;
+  }
+  
+  .review-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .review-item strong {
+    min-width: auto;
   }
 }
 </style>

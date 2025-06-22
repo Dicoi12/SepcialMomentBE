@@ -42,6 +42,46 @@ namespace SepcialMomentBE.Controllers
             return CreatedAtAction(nameof(GetEvent), new { id = createdEvent.Id }, createdEvent);
         }
 
+        [HttpPost("with-form")]
+        public async Task<ActionResult<Event>> CreateEventWithForm([FromBody] CreateEventWithFormRequest request)
+        {
+            try
+            {
+                // Extrag UserId din token-ul de autentificare
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized("User ID invalid din token");
+                }
+
+                // Creez evenimentul
+                var event_ = new Event
+                {
+                    UserId = userId,
+                    Title = request.Title,
+                    Description = request.Description,
+                    Date = request.Date,
+                    Location = request.Location,
+                    EventType = request.EventType,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Convertesc datele formularului în EventForm
+                var eventForms = request.FormData.Select(fd => new EventForm
+                {
+                    FormTemplateId = fd.FormTemplateId,
+                    FieldValue = fd.FieldValue
+                }).ToList();
+
+                var createdEvent = await _eventService.CreateEventWithFormAsync(event_, eventForms);
+                return CreatedAtAction(nameof(GetEvent), new { id = createdEvent.Id }, createdEvent);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Eroare la crearea evenimentului: {ex.Message}");
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEvent(int id, Event event_)
         {

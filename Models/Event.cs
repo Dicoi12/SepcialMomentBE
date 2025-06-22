@@ -38,4 +38,33 @@ namespace SepcialMomentBE.Models
         public ICollection<InvitationTemplate> InvitationTemplates { get; set; } = new List<InvitationTemplate>();
         public ICollection<WeddingServiceProvider> ServiceProviders { get; set; } = new List<WeddingServiceProvider>();
     }
+
+    public class CreateEventWithFormRequest
+    {
+        [Required]
+        public string Title { get; set; } = string.Empty;
+        
+        [Required]
+        public string Description { get; set; } = string.Empty;
+        
+        [Required]
+        public DateTime Date { get; set; }
+        
+        [Required]
+        public string Location { get; set; } = string.Empty;
+        
+        [Required]
+        public string EventType { get; set; } = string.Empty;
+        
+        public List<EventFormData> FormData { get; set; } = new List<EventFormData>();
+    }
+
+    public class EventFormData
+    {
+        [Required]
+        public int FormTemplateId { get; set; }
+        
+        [Required]
+        public string FieldValue { get; set; } = string.Empty;
+    }
 } 

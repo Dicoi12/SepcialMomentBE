@@ -14,6 +14,7 @@ declare module 'vue' {
     Dialog: typeof import('primevue/dialog')['default']
     Dropdown: typeof import('primevue/dropdown')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
+    InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Navigation: typeof import('./src/components/Navigation.vue')['default']
     Password: typeof import('primevue/password')['default']
