@@ -25,7 +25,7 @@ namespace SepcialMomentBE.Controllers
             try
             {
                 _logger.LogInformation("Attempting to register user with email: {Email}", request.Email);
-                
+
                 var result = await _authService.RegisterAsync(
                     request.Email,
                     request.Password,
@@ -48,16 +48,19 @@ namespace SepcialMomentBE.Controllers
             try
             {
                 _logger.LogInformation("Attempting login for user: {Email}", request.Email);
-                
+
                 var response = await _authService.LoginAsync(request.Email, request.Password);
-                
+
                 _logger.LogInformation("Login successful for user: {Email}", request.Email);
-                
+
                 return Ok(new
                 {
-                    accessToken = response.AccessToken,
+                    token = response.AccessToken,
                     refreshToken = response.RefreshToken,
-                    expiresAt = response.ExpiresAt
+                    expiresAt = response.ExpiresAt,
+                    email = response.Email,
+                    name = response.Name,
+                    id = response.Id
                 });
             }
             catch (Exception ex)
@@ -97,4 +100,4 @@ namespace SepcialMomentBE.Controllers
             }
         }
     }
-} 
+}

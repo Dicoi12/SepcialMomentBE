@@ -135,7 +135,10 @@ namespace SepcialMomentBE.Services
             {
                 AccessToken = tokenHandler.WriteToken(token),
                 RefreshToken = refreshToken,
-                ExpiresAt = tokenDescriptor.Expires!.Value
+                ExpiresAt = tokenDescriptor.Expires!.Value,
+                Email = user.Email,
+                Name = $"{user.FirstName} {user.LastName}",
+                Id = user.Id
             };
         }
 
