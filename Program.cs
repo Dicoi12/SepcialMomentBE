@@ -162,6 +162,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
+// Add redirect to Swagger for root path
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
 // Important: Authentication must be before Authorization
 app.UseAuthentication();
 app.UseAuthorization();

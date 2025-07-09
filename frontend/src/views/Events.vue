@@ -303,77 +303,90 @@
         <div v-else-if="eventFormTemplate" class="template-form">
           <div 
             v-for="field in eventFormTemplate.fields" 
-            :key="field.name"
+            :key="field.fieldName"
             class="form-group"
           >
-            <label :for="field.name">{{ field.label }} {{ field.required ? '*' : '' }}</label>
+            <label :for="field.fieldName">{{ field.fieldLabel }} {{ field.isRequired ? '*' : '' }}</label>
             
             <!-- Input Text -->
             <InputText
-              v-if="field.type === 'text'"
-              :id="field.name"
-              v-model="templateFormData[field.name]"
-              :placeholder="field.placeholder"
+              v-if="field.fieldType === 'text'"
+              :id="field.fieldName"
+              v-model="templateFormData[field.fieldName]"
+              :placeholder="field.helpText"
               class="form-input"
-              :class="{ 'p-invalid': templateErrors[field.name] }"
+              :class="{ 'p-invalid': templateErrors[field.fieldName] }"
             />
             
             <!-- Textarea -->
             <Textarea
-              v-else-if="field.type === 'textarea'"
-              :id="field.name"
-              v-model="templateFormData[field.name]"
-              :placeholder="field.placeholder"
-              :rows="field.rows || 4"
+              v-else-if="field.fieldType === 'textarea'"
+              :id="field.fieldName"
+              v-model="templateFormData[field.fieldName]"
+              :placeholder="field.helpText"
+              :rows="4"
               class="form-input"
-              :class="{ 'p-invalid': templateErrors[field.name] }"
+              :class="{ 'p-invalid': templateErrors[field.fieldName] }"
             />
             
             <!-- Number Input -->
             <InputNumber
-              v-else-if="field.type === 'number'"
-              :id="field.name"
-              v-model="templateFormData[field.name]"
-              :placeholder="field.placeholder"
+              v-else-if="field.fieldType === 'number'"
+              :id="field.fieldName"
+              v-model="templateFormData[field.fieldName]"
+              :placeholder="field.helpText"
               class="form-input"
-              :class="{ 'p-invalid': templateErrors[field.name] }"
+              :class="{ 'p-invalid': templateErrors[field.fieldName] }"
             />
             
-            <!-- Dropdown -->
+            <!-- Dropdown/Select -->
             <Dropdown
-              v-else-if="field.type === 'dropdown'"
-              :id="field.name"
-              v-model="templateFormData[field.name]"
-              :options="field.options"
+              v-else-if="field.fieldType === 'select'"
+              :id="field.fieldName"
+              v-model="templateFormData[field.fieldName]"
+              :options="field.options ? parseOptions(field.options) : []"
               optionLabel="label"
               optionValue="value"
-              :placeholder="field.placeholder"
+              :placeholder="field.helpText"
               class="form-input"
-              :class="{ 'p-invalid': templateErrors[field.name] }"
+              :class="{ 'p-invalid': templateErrors[field.fieldName] }"
             />
             
             <!-- Checkbox -->
-            <div v-else-if="field.type === 'checkbox'" class="checkbox-group">
+            <div v-else-if="field.fieldType === 'checkbox'" class="checkbox-group">
               <Checkbox
-                :id="field.name"
-                v-model="templateFormData[field.name]"
+                :id="field.fieldName"
+                v-model="templateFormData[field.fieldName]"
                 :binary="true"
               />
-              <label :for="field.name" class="checkbox-label">{{ field.label }}</label>
+              <label :for="field.fieldName" class="checkbox-label">{{ field.fieldLabel }}</label>
             </div>
             
             <!-- Date Picker -->
             <Calendar
-              v-else-if="field.type === 'date'"
-              :id="field.name"
-              v-model="templateFormData[field.name]"
+              v-else-if="field.fieldType === 'date'"
+              :id="field.fieldName"
+              v-model="templateFormData[field.fieldName]"
               :showIcon="true"
-              :placeholder="field.placeholder"
+              :placeholder="field.helpText"
               class="form-input"
-              :class="{ 'p-invalid': templateErrors[field.name] }"
+              :class="{ 'p-invalid': templateErrors[field.fieldName] }"
             />
             
-            <small v-if="templateErrors[field.name]" class="error-message">{{ templateErrors[field.name] }}</small>
+            <!-- Time Picker -->
+            <Calendar
+              v-else-if="field.fieldType === 'time'"
+              :id="field.fieldName"
+              v-model="templateFormData[field.fieldName]"
+              timeOnly
+              hourFormat="24"
+              :placeholder="field.helpText"
+              class="form-input"
+              :class="{ 'p-invalid': templateErrors[field.fieldName] }"
+            />
+            
+            <small v-if="templateErrors[field.fieldName]" class="error-message">{{ templateErrors[field.fieldName] }}</small>
+            <small v-if="field.helpText" class="help-text">{{ field.helpText }}</small>
           </div>
         </div>
         
@@ -490,6 +503,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import type { Event, EventFormTemplate, CreateEventRequest } from '../types/event'
+import fetchApi from '../fetch'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -535,7 +549,7 @@ const errors = ref({
 
 // Event Type Options
 const eventTypeOptions = [
-  { label: 'Nuntă', value: 'Wedding' },
+  { label: 'Nuntă', value: 'nunta' },
   { label: 'Botez', value: 'Baptism' },
   { label: 'Aniversare', value: 'Anniversary' }
 ]
@@ -641,18 +655,25 @@ const loadEventFormTemplate = async () => {
   
   isLoadingTemplate.value = true
   try {
-    const response = await fetch(`/api/EventForm/GetTemplate/${eventForm.value.eventType}`, {
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
+    const response = await fetchApi(`EventFormTemplate/by-event-type/${eventForm.value.eventType}`, 'GET')
+    if (response.status === 200) {
+      // Sortăm câmpurile după displayOrder
+      const fields = response.data.sort((a: any, b: any) => a.displayOrder - b.displayOrder)
+      console.log(fields)
+      eventFormTemplate.value = {
+        id: 1,
+        eventType: eventForm.value.eventType,
+        name: `Template pentru ${getEventTypeLabel(eventForm.value.eventType)}`,
+        description: `Template pentru ${getEventTypeLabel(eventForm.value.eventType)}`,
+        fields: fields,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
-    })
-    
-    if (response.ok) {
-      eventFormTemplate.value = await response.json()
-      // Initialize template form data
+      // Inițializăm datele formularului
       if (eventFormTemplate.value?.fields) {
         eventFormTemplate.value.fields.forEach((field) => {
-          templateFormData.value[field.name] = field.defaultValue || ''
+          templateFormData.value[field.fieldName] = ''
         })
       }
     } else {
@@ -711,10 +732,10 @@ const validateTemplateForm = () => {
   let isValid = true
 
   eventFormTemplate.value.fields.forEach((field) => {
-    if (field.required && (!templateFormData.value[field.name] || 
-        (typeof templateFormData.value[field.name] === 'string' && 
-         !templateFormData.value[field.name].trim()))) {
-      templateErrors.value[field.name] = `${field.label} este obligatoriu`
+    if (field.isRequired && (!templateFormData.value[field.fieldName] || 
+        (typeof templateFormData.value[field.fieldName] === 'string' && 
+         !templateFormData.value[field.fieldName].trim()))) {
+      templateErrors.value[field.fieldName] = `${field.fieldLabel} este obligatoriu`
       isValid = false
     }
   })
@@ -886,8 +907,8 @@ const getEventTypeClass = (type: string) => {
 
 const getFieldLabel = (fieldName: string) => {
   if (!eventFormTemplate.value?.fields) return fieldName
-  const field = eventFormTemplate.value.fields.find((f) => f.name === fieldName)
-  return field ? field.label : fieldName
+  const field = eventFormTemplate.value.fields.find((f) => f.fieldName === fieldName)
+  return field ? field.fieldLabel : fieldName
 }
 
 const formatFieldValue = (value: any) => {
@@ -901,6 +922,20 @@ const formatFieldValue = (value: any) => {
     return formatDateTime(value)
   }
   return String(value)
+}
+
+const parseOptions = (optionsString: string | null) => {
+  if (!optionsString) return []
+  try {
+    const optionsArray = JSON.parse(optionsString)
+    return optionsArray.map((option: string) => ({
+      label: option,
+      value: option
+    }))
+  } catch (error) {
+    console.error('Eroare la parsarea opțiunilor:', error)
+    return []
+  }
 }
 
 // Lifecycle
@@ -1215,6 +1250,13 @@ onMounted(() => {
   color: #e74c3c;
   font-size: 0.85rem;
   font-weight: 500;
+}
+
+.help-text {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 0.25rem;
 }
 
 .delete-content {

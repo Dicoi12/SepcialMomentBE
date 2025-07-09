@@ -13,20 +13,20 @@ export interface Event {
 }
 
 export interface EventFormField {
-  name: string;
-  label: string;
-  type: 'text' | 'textarea' | 'number' | 'dropdown' | 'checkbox' | 'date';
-  required: boolean;
-  placeholder?: string;
-  defaultValue?: any;
-  options?: Array<{ label: string; value: any }>;
-  rows?: number;
-  validation?: {
-    min?: number;
-    max?: number;
-    pattern?: string;
-    message?: string;
-  };
+  id: number;
+  eventType: string;
+  fieldName: string;
+  fieldType: 'text' | 'textarea' | 'number' | 'select' | 'checkbox' | 'date' | 'time';
+  description: string;
+  isRequired: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  fieldLabel: string;
+  displayOrder: number;
+  options: string | null;
+  validationRules: string | null;
+  helpText: string;
+  eventForms: any[];
 }
 
 export interface EventFormTemplate {
@@ -54,4 +54,4 @@ export interface UpdateEventRequest extends CreateEventRequest {
   id: number;
 }
 
-export type EventType = 'Wedding' | 'Baptism' | 'Anniversary' | 'Birthday' | 'Other'; 
+export type EventType = 'nunta' | 'Baptism' | 'Anniversary' | 'Birthday' | 'Other'; 
