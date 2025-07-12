@@ -34,15 +34,19 @@ namespace SepcialMomentBE.Services
 
         public async Task<TokenResponse> LoginAsync(string email, string password)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email);
+         
+            
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == email);
 
-            if (user == null || !VerifyPasswordHash(password, user.PasswordHash))
-            {
-                throw new Exception("Invalid email or password");
-            }
+                if (user == null || !VerifyPasswordHash(password, user.PasswordHash))
+                {
+                    throw new Exception("Invalid email or password");
+                }
 
-            return await GenerateTokensAsync(user);
+                return await GenerateTokensAsync(user);
+            
+            
         }
 
         public async Task<TokenResponse> RefreshTokenAsync(string refreshToken)

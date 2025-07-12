@@ -149,8 +149,14 @@ builder.Services.AddScoped<GenericCrudService<InvitationTemplate>>();
 builder.Services.AddScoped<GenericCrudService<WeddingExpense>>();
 builder.Services.AddScoped<GenericCrudService<WeddingGuest>>();
 builder.Services.AddScoped<GenericCrudService<EventFormTemplate>>();
+builder.Services.AddScoped<EventFormTemplateService>();
+
+
+
+
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

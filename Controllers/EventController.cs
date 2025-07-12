@@ -62,7 +62,7 @@ namespace SepcialMomentBE.Controllers
                     Description = request.Description,
                     Date = request.Date,
                     Location = request.Location,
-                    EventType = request.EventType,
+                    EventType = Enum.Parse<EventType>(request.EventType),
                     CreatedAt = DateTime.UtcNow
                 };
 

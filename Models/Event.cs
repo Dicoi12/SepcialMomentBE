@@ -23,7 +23,7 @@ namespace SepcialMomentBE.Models
         public string Location { get; set; } = string.Empty;
         
         [Required]
-        public string EventType { get; set; } = string.Empty;
+        public EventType EventType { get; set; } 
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
