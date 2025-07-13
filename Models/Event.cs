@@ -21,9 +21,11 @@ namespace SepcialMomentBE.Models
         
         [Required]
         public string Location { get; set; } = string.Empty;
-        
-        [Required]
-        public string EventType { get; set; } = string.Empty;
+
+        public int? EventTypeId { get; set; }
+
+        [ForeignKey("EventTypeId")]
+        public EventType? EventType { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
@@ -52,10 +54,9 @@ namespace SepcialMomentBE.Models
         
         [Required]
         public string Location { get; set; } = string.Empty;
-        
-        [Required]
-        public string EventType { get; set; } = string.Empty;
-        
+
+        public int? EventTypeId { get; set; }
+
         public List<EventFormData> FormData { get; set; } = new List<EventFormData>();
     }
 

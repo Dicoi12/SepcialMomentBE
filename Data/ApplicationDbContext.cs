@@ -12,6 +12,7 @@ namespace SepcialMomentBE.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Event> Events { get; set; }
+        public DbSet<EventType> EventTypes { get; set; }
         public DbSet<EventForm> EventForms { get; set; }
         public DbSet<EventFormTemplate> EventFormTemplates { get; set; }
         public DbSet<WeddingExpense> WeddingExpenses { get; set; }
@@ -29,6 +30,18 @@ namespace SepcialMomentBE.Data
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
+            // Configurare pentru EventType
+            modelBuilder.Entity<EventType>()
+                .HasIndex(et => et.Name)
+                .IsUnique();
+
+            // Seed data pentru EventType
+            modelBuilder.Entity<EventType>().HasData(
+                new EventType { Id = 1, Name = "Nuntă", Description = "Eveniment de tip nuntă" },
+                new EventType { Id = 2, Name = "Botez", Description = "Eveniment de tip botez" },
+                new EventType { Id = 3, Name = "Zi de naștere", Description = "Eveniment de tip zi de naștere" }
+            );
+
             // Configurare pentru Event
             modelBuilder.Entity<Event>()
                 .HasOne(e => e.User)
@@ -36,10 +49,24 @@ namespace SepcialMomentBE.Data
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Event>()
+                .HasOne(e => e.EventType)
+                .WithMany()
+                .HasForeignKey(e => e.EventTypeId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
             // Configurare pentru EventFormTemplate
             modelBuilder.Entity<EventFormTemplate>()
-                .HasIndex(t => new { t.EventType, t.FieldName })
+                .HasIndex(t => new { t.EventTypeId, t.FieldName })
                 .IsUnique();
+
+            modelBuilder.Entity<EventFormTemplate>()
+                .HasOne(t => t.EventType)
+                .WithMany()
+                .HasForeignKey(t => t.EventTypeId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
 
             // Configurare pentru EventForm
             modelBuilder.Entity<EventForm>()

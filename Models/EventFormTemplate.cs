@@ -6,10 +6,12 @@ namespace SepcialMomentBE.Models
     public class EventFormTemplate
     {
         public int Id { get; set; }
+
+        public int? EventTypeId { get; set; }
         
-        [Required]
-        public string EventType { get; set; } = string.Empty;
-        
+        [ForeignKey("EventTypeId")]
+        public EventType? EventType { get; set; }
+
         [Required]
         public string FieldName { get; set; } = string.Empty;
         

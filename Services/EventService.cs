@@ -17,6 +17,7 @@ namespace SepcialMomentBE.Services
         {
             return await _context.Events
                 .Include(e => e.User)
+                .Include(e => e.EventType)
                 .Include(e => e.EventForms)
                 .Include(e => e.WeddingExpenses)
                 .Include(e => e.WeddingGuests)
@@ -30,6 +31,7 @@ namespace SepcialMomentBE.Services
         {
             return await _context.Events
                 .Include(e => e.User)
+                .Include(e => e.EventType)
                 .Include(e => e.EventForms)
                 .Include(e => e.WeddingExpenses)
                 .Include(e => e.WeddingGuests)
@@ -72,11 +74,29 @@ namespace SepcialMomentBE.Services
             return true;
         }
 
-        public async Task<IEnumerable<EventFormTemplate>> GetEventFormTemplatesByEventTypeAsync(string eventType)
+        public async Task<IEnumerable<EventFormTemplate>> GetEventFormTemplatesByEventTypeAsync(int? eventTypeId)
         {
-            return await _context.EventFormTemplates
-                .Where(template => template.EventType.ToLower() == eventType.ToLower())
+            var query = _context.EventFormTemplates.AsQueryable();
+            
+            if (eventTypeId.HasValue)
+            {
+                query = query.Where(template => template.EventTypeId == eventTypeId.Value);
+            }
+            else
+            {
+                query = query.Where(template => template.EventTypeId == null);
+            }
+            
+            return await query
+                .Include(t => t.EventType)
                 .OrderBy(template => template.DisplayOrder)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<EventType>> GetAllEventTypesAsync()
+        {
+            return await _context.EventTypes
+                .OrderBy(et => et.Name)
                 .ToListAsync();
         }
 

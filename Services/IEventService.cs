@@ -9,7 +9,8 @@ namespace SepcialMomentBE.Services
         Task<Event> CreateEventAsync(Event event_);
         Task<bool> UpdateEventAsync(Event event_);
         Task<bool> DeleteEventAsync(int id);
-        Task<IEnumerable<EventFormTemplate>> GetEventFormTemplatesByEventTypeAsync(string eventType);
+        Task<IEnumerable<EventFormTemplate>> GetEventFormTemplatesByEventTypeAsync(int? eventTypeId);
+        Task<IEnumerable<EventType>> GetAllEventTypesAsync();
         Task<Event> CreateEventWithFormAsync(Event event_, List<EventForm> eventForms);
     }
 } 

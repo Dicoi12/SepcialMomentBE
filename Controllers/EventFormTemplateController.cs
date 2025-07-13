@@ -31,10 +31,10 @@ namespace SepcialMomentBE.Controllers
         public async Task<ActionResult<ServiceResult<List<EventFormTemplate>>>> GetByProperty([FromQuery] string propertyName, [FromQuery] string value)
             => Ok(await _service.GetByPropertyAsync(propertyName, value));
 
-        [HttpGet("by-event-type/{eventType}")]
-        public async Task<ActionResult<IEnumerable<EventFormTemplate>>> GetByEventType(string eventType)
+        [HttpGet("by-event-type/{eventTypeId?}")]
+        public async Task<ActionResult<IEnumerable<EventFormTemplate>>> GetByEventType(int? eventTypeId = null)
         {
-            var templates = await _eventService.GetEventFormTemplatesByEventTypeAsync(eventType);
+            var templates = await _eventService.GetEventFormTemplatesByEventTypeAsync(eventTypeId);
             return Ok(templates);
         }
 
@@ -47,7 +47,7 @@ namespace SepcialMomentBE.Controllers
                 {
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "denumire_nunta",
                         FieldType = "text",
                         FieldLabel = "Denumirea nunții",
@@ -59,7 +59,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "nume_mireasa",
                         FieldType = "text",
                         FieldLabel = "Numele miresei",
@@ -71,7 +71,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "nume_mire",
                         FieldType = "text",
                         FieldLabel = "Numele mirelui",
@@ -83,7 +83,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "parinti_mireasa",
                         FieldType = "text",
                         FieldLabel = "Părinții miresei",
@@ -95,7 +95,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "parinti_mire",
                         FieldType = "text",
                         FieldLabel = "Părinții mirelui",
@@ -107,7 +107,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "nume_nasi",
                         FieldType = "text",
                         FieldLabel = "Numele nașilor",
@@ -119,7 +119,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "denumire_biserica",
                         FieldType = "text",
                         FieldLabel = "Denumirea bisericii",
@@ -131,7 +131,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "adresa_biserica",
                         FieldType = "text",
                         FieldLabel = "Adresa bisericii",
@@ -143,7 +143,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "data_ceremonie",
                         FieldType = "date",
                         FieldLabel = "Data ceremoniei",
@@ -155,7 +155,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "ora_ceremonie",
                         FieldType = "time",
                         FieldLabel = "Ora ceremoniei",
@@ -167,7 +167,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "denumire_sala",
                         FieldType = "text",
                         FieldLabel = "Denumirea sălii de recepție",
@@ -179,7 +179,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "adresa_sala",
                         FieldType = "text",
                         FieldLabel = "Adresa sălii de recepție",
@@ -191,7 +191,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "data_receptie",
                         FieldType = "date",
                         FieldLabel = "Data recepției",
@@ -203,7 +203,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "ora_receptie",
                         FieldType = "time",
                         FieldLabel = "Ora recepției",
@@ -215,7 +215,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "numar_invitati",
                         FieldType = "number",
                         FieldLabel = "Numărul de invitați",
@@ -227,7 +227,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "stil_nunta",
                         FieldType = "select",
                         FieldLabel = "Stilul nunții",
@@ -240,7 +240,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "schema_culori",
                         FieldType = "text",
                         FieldLabel = "Schema de culori",
@@ -252,7 +252,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "buget_total",
                         FieldType = "number",
                         FieldLabel = "Bugetul total",
@@ -264,7 +264,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "fotograf",
                         FieldType = "text",
                         FieldLabel = "Fotograf",
@@ -276,7 +276,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "catering",
                         FieldType = "text",
                         FieldLabel = "Serviciu catering",
@@ -288,7 +288,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "tip_muzica",
                         FieldType = "select",
                         FieldLabel = "Tipul de muzică",
@@ -301,7 +301,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "florar",
                         FieldType = "text",
                         FieldLabel = "Florar",
@@ -313,7 +313,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "transport",
                         FieldType = "text",
                         FieldLabel = "Serviciu transport",
@@ -325,7 +325,7 @@ namespace SepcialMomentBE.Controllers
                     },
                     new EventFormTemplate
                     {
-                        EventType = "nunta",
+                        EventTypeId = 1,
                         FieldName = "cerinte_speciale",
                         FieldType = "textarea",
                         FieldLabel = "Cerințe speciale",

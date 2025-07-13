@@ -35,6 +35,13 @@ namespace SepcialMomentBE.Controllers
             return Ok(event_);
         }
 
+        [HttpGet("types")]
+        public async Task<ActionResult<IEnumerable<EventType>>> GetEventTypes()
+        {
+            var eventTypes = await _eventService.GetAllEventTypesAsync();
+            return Ok(eventTypes);
+        }
+
         [HttpPost]
         public async Task<ActionResult<Event>> CreateEvent(Event event_)
         {
@@ -62,7 +69,7 @@ namespace SepcialMomentBE.Controllers
                     Description = request.Description,
                     Date = request.Date,
                     Location = request.Location,
-                    EventType = request.EventType,
+                    EventTypeId = request.EventTypeId,
                     CreatedAt = DateTime.UtcNow
                 };
 
