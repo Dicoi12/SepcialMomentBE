@@ -167,8 +167,10 @@ namespace SepcialMomentBE.Services
             Array.Copy(hash, 0, passwordHash, SaltSize, HashSize);
         }
 
+        
         private static bool VerifyPasswordHash(string password, byte[] storedHash)
         {
+            String ceva = "test";
             // Extragem salt-ul din hash-ul stocat
             var salt = new byte[SaltSize];
             Array.Copy(storedHash, 0, salt, 0, SaltSize);
